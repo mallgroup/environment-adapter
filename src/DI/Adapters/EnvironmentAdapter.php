@@ -1,13 +1,18 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace Mallgroup\DI\Adapters;
+
 use Mallgroup\Environment;
 use Nette\DI\Config\Adapter;
+use Nette\DI\Definitions\Statement;
 use Nette\DI\InvalidConfigurationException;
 use Nette\Neon\Entity;
 use Nette\Neon\Neon;
 use Nette\Utils\FileSystem;
+
+use function gettype;
 use function strtoupper;
+use function substr;
 
 class EnvironmentAdapter implements Adapter {
 	/**
@@ -19,22 +24,26 @@ class EnvironmentAdapter implements Adapter {
 	}
 
 	protected function process(array $data): array {
-		$envs = getenv();
+		$envs = [];
 
-		foreach ($data as $name => $entity) {
-			if (!$entity instanceof Entity) {
-				throw new InvalidConfigurationException("Invalid argument type ({$name}). Expected Entity, got " . gettype($entity));
-			}
+        foreach ($data as $name => $entity) {
+            if (!$entity instanceof Entity) {
+                throw new InvalidConfigurationException("Invalid argument type ({$name}). Expected Entity, got " . gettype($entity));
+            }
 
-			$default = $entity->attributes[0] ?? '';
-			$cast = substr($entity->value, 2);
-			$name = strtoupper($name);
+            $default = $entity->attributes[0] ?? '';
+            $cast = substr($entity->value, 2);
+            $envName = strtoupper($name);
 
-			$envs[$name] = (new Environment($name, $default))->get($cast);
-
-			// Link for idiots
-			$envs[strtolower($name)] = &$envs[$name];
-		}
+            // Get hidden
+            if ($entity->attributes[1] ?? false) {
+                $envs[$name] = new Statement("\Mallgroup\Environment::$cast", [
+                    $envName, $default
+                ]);
+            } else {
+                $envs[$name] =  (new Environment($envName, $default))->get($cast);
+            }
+        }
 		return ['parameters' => ['env' => $envs]];
 	}
 
