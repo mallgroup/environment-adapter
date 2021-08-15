@@ -12,6 +12,7 @@ use Nette\Utils\FileSystem;
 
 use function array_walk_recursive;
 use function gettype;
+use function ltrim;
 use function strtoupper;
 use function substr;
 
@@ -65,7 +66,18 @@ class EnvironmentAdapter implements Adapter {
             $data,
             static function (mixed &$val): void {
                 if ($val instanceof Statement) {
-                    $val = new Entity($val->getEntity(), $val->arguments);
+                    $entity = $val->getEntity();
+                    $args = $val->arguments;
+
+                    if ($entity && ltrim('\\', $entity[0]) === ltrim('\\', Environment::class)) {
+                        $args = [
+                            $args[1] ?? '',
+                            true
+                        ];
+                        $entity = '::' . $entity[1] ?? 'string';
+                    }
+
+                    $val = new Entity($entity, $args);
                 }
             },
         );

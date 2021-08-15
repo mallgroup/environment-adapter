@@ -27,6 +27,7 @@
     "scripts": {
         "phpstan": "phpstan analyse",
         "tests": "tester tests -s",
+        "tests-watch": "tester tests -s -w src",
         "psalm": "psalm"
     },
     "minimum-stability": "stable",

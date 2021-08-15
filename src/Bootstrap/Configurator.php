@@ -11,15 +11,15 @@ class Configurator extends Bootstrap\Configurator
 {
     private Loader $loader;
 
-    public function createLoader(): Loader
-    {
-        $this->loader ??= parent::createLoader();
-        return $this->loader;
+    public function __construct() {
+        $this->loader = parent::createLoader() ?: new Loader();
+        $this->loader->addAdapter('env', EnvironmentAdapter::class);
+
+        parent::__construct();
     }
 
-    public function __construct()
+    public function createLoader(): Loader
     {
-        parent::__construct();
-        $this->createLoader()->addAdapter('env', EnvironmentAdapter::class);
+        return $this->loader;
     }
 }

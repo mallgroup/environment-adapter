@@ -1,0 +1,11 @@
+version: '3.3'
+services:
+  environment-adapter:
+    container_name: mg-environment-adapter
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/usr/src/app
+    stdin_open: true
+    tty: true
