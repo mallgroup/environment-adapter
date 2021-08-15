@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace Mallgroup\Bootstrap;
 
-use Mallgroup\DI\Adapters\EnvironmentAdapter;
+use Mallgroup\DI\Config\Adapters\EnvironmentAdapter;
 use Nette\Bootstrap;
 use Nette\DI\Config\Loader;
 
