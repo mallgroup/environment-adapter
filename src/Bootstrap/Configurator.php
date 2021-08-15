@@ -12,7 +12,7 @@ class Configurator extends Bootstrap\Configurator
     private Loader $loader;
 
     public function __construct() {
-        $this->loader = parent::createLoader() ?: new Loader();
+        $this->loader = parent::createLoader();
         $this->loader->addAdapter('env', EnvironmentAdapter::class);
 
         parent::__construct();
