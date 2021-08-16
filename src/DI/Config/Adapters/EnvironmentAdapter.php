@@ -51,7 +51,7 @@ class EnvironmentAdapter implements Adapter
 
             // Get hidden
             if ($entity->attributes[1] ?? false) {
-                $envs[$name] = new Statement("\Mallgroup\Environment::$cast", [
+                $envs[$name] = new Statement("Mallgroup\Environment::$cast", [
                     $envName,
                     $default
                 ]);
@@ -76,7 +76,7 @@ class EnvironmentAdapter implements Adapter
                 if ($val instanceof Statement && $entity = $val->getEntity()) {
                     $args = $val->arguments;
 
-                    if (is_array($entity) && is_string($entity[0]) && ltrim('\\', $entity[0]) === ltrim('\\', Environment::class)) {
+                    if (is_array($entity) && $entity[0] === Environment::class) {
                         $type = (string) ($entity[1] ?? 'string');
                         $args = [
                             $args[1] ?? '',

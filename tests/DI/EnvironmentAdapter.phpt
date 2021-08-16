@@ -35,7 +35,7 @@ Assert::equal([
                           [
                               'service_user' => 'secret_user',
                               'service_password' => new Statement(
-                                  '\Mallgroup\Environment::string',
+                                  'Mallgroup\Environment::string',
                                   ['SERVICE_PASSWORD', 'secret_password']
                               ),
                               'service_port' => 1234,
