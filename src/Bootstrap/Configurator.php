@@ -9,17 +9,10 @@ use Nette\DI\Config\Loader;
 
 class Configurator extends Bootstrap\Configurator
 {
-    private Loader $loader;
-
-    public function __construct() {
-        $this->loader = parent::createLoader();
-        $this->loader->addAdapter('env', EnvironmentAdapter::class);
-
-        parent::__construct();
-    }
-
-    public function createLoader(): Loader
+    protected function createLoader(): Loader
     {
-        return $this->loader;
+        $loader = parent::createLoader();
+        $loader->addAdapter('env', EnvironmentAdapter::class);
+        return $loader;
     }
 }
