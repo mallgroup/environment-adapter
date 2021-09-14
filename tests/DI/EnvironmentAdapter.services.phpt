@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 use Mallgroup\DI\Config\Adapters\EnvironmentAdapter;
 use Nette\DI\Definitions\Statement;
+use Nette\DI\InvalidConfigurationException;
 use Tester\Assert;
 
 
@@ -44,3 +45,14 @@ Assert::equal(
     ],
     $data,
 );
+
+Assert::exception(function() use ($adapter) {
+    $adapter->load(
+            Tester\FileMock::create(
+                    '
+service_user: test
+',
+                    'env'
+            )
+    );
+}, InvalidConfigurationException::class);
