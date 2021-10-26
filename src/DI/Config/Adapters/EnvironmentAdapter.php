@@ -10,85 +10,126 @@ use Nette\DI\InvalidConfigurationException;
 use Nette\Neon\Entity;
 use Nette\Neon\Neon;
 use Nette\Utils\FileSystem;
-
 use function array_walk_recursive;
 use function gettype;
-use function ltrim;
 use function strtoupper;
 use function substr;
 
 class EnvironmentAdapter implements Adapter
 {
-    /**
-     * Reads configuration from PHP file.
-     * @return array<string, array<string, array<string, mixed>>>
-     */
-    public function load(string $file): array
-    {
-        /** @var array<string, mixed> $data */
-        $data = (array)Neon::decode(FileSystem::read($file));
-        return $this->process($data);
-    }
+	/**
+	 * Reads configuration from PHP file.
+	 * @return array<string, array<string, array<string, mixed>>>
+	 */
+	public function load(string $file): array
+	{
+		/** @var array<string, mixed> $data */
+		$data = (array)Neon::decode(FileSystem::read($file));
+		return $this->process($data);
+	}
 
-    /**
-     * @param array<string,mixed> $data
-     * @return array<string, array<string, array<string, mixed>>>
-     */
-    protected function process(array $data): array
-    {
-        $envs = [];
+	/**
+	 * @param array<string,mixed> $data
+	 * @return array<string, array<string, array<string, mixed>>>
+	 */
+	protected function process(array $data): array
+	{
+		$envs = [];
 
-        foreach ($data as $name => $entity) {
-            if (!$entity instanceof Entity) {
-                throw new InvalidConfigurationException(
-                    "Invalid argument type ({$name}). Expected Entity, got " . gettype($entity)
-                );
-            }
+		foreach ($data as $name => $entity) {
+			if (!$entity instanceof Entity) {
+				throw new InvalidConfigurationException(
+					"Invalid argument type ({$name}). Expected Entity, got " . gettype($entity)
+				);
+			}
 
-            $default = (string)($entity->attributes[0] ?? '');
-            $cast = substr((string)$entity->value, 2);
-            $envName = strtoupper($name);
+			$name = strtoupper($name);
+			$var = strtolower($name);
+			$type = $this->getEntityType($entity);
+			$attributes = $this->getAttributes($entity->attributes);
 
-            // Get hidden
-            if ($entity->attributes[1] ?? false) {
-                $envs[$name] = new Statement("Mallgroup\Environment::$cast", [
-                    $envName,
-                    $default
-                ]);
-            } else {
-                $envs[$name] = (new Environment($envName, $default))->get($cast);
-            }
-        }
-        return ['parameters' => ['env' => $envs]];
-    }
+			if ($entity->attributes['hidden'] ?? $entity->attributes[1] ?? false) {
+				$envs[$var] = new Statement("Mallgroup\Environment::$type", $this->modifyStatementAttributes($name, $type, $attributes));
+			} elseif ($type === 'array') {
+				$envs[$var] = Environment::array($name, $attributes['separator'] ?: '|', $attributes['cast']);
+			} else {
+				$envs[$var] = (new Environment($name, $attributes['default'] ?? ''))->get($type);
+			}
+		}
+		return ['parameters' => ['env' => $envs]];
+	}
 
+	/**
+	 * @param string $name
+	 * @param string $type
+	 * @param array<"cast"|"default"|"separator", string> $arguments
+	 * @return array<"cast"|"default"|"separator"|"name", string>
+	 */
+	protected function modifyStatementAttributes(string $name, string $type, array $arguments): array {
+		$arguments['name'] = $name;
+		if ($type === 'array') {
+			unset($arguments['default']);
+		} else {
+			unset($arguments['separator']);
+		}
+		return $arguments;
+	}
 
-    /**
-     * Generates configuration in PHP format.
-     * @param mixed[] $data
-     */
-    public function dump(array $data): string
-    {
-        $data = (array)($data['parameters']['env'] ?? []);
-        array_walk_recursive(
-            $data,
-            static function (mixed &$val): void {
-                if ($val instanceof Statement && $entity = $val->getEntity()) {
-                    $args = $val->arguments;
+	protected function getEntityType(Entity $entity): string
+	{
+		$type = substr((string)$entity->value, 2);
+		return match ($type) {
+			Environment::INTEGER, Environment::INT, Environment::BOOLEAN, Environment::BOOL, Environment::FLOAT, 'array' => $type,
+			default => Environment::STRING
+		};
+	}
 
-                    if (is_array($entity) && $entity[0] === Environment::class) {
-                        $type = (string) ($entity[1] ?? 'string');
-                        $args = [
-                            $args[1] ?? '',
-                            true
-                        ];
-                        $entity = '::' . $type;
-                    }
+	/**
+	 * @param array<int|string, mixed> $arguments
+	 * @return array<"cast"|"default"|"separator", string>
+	 */
+	protected function getAttributes(array $arguments): array
+	{
+		return array_filter([
+			'separator' => (string)($arguments['separator'] ?? $arguments[0] ?? '|'),
+			'cast' => (string)($arguments['cast'] ?? $arguments[2] ?? Environment::STRING),
+			'default' => (string)($arguments['default'] ?? $arguments[0] ?? ''),
+		], static fn($item) => $item !== '');
+	}
 
-                    $val = new Entity($entity, $args);
-                }
-            },
-        );
-        return "# generated by Nette\n\n" . Neon::encode($data, Neon::BLOCK);
-    }
+	/**
+	 * Generates configuration in PHP format.
+	 * @param mixed[] $data
+	 */
+	public function dump(array $data): string
+	{
+		$data = (array)($data['parameters']['env'] ?? []);
+		array_walk_recursive(
+			$data,
+			static function (mixed &$val): void {
+				if ($val instanceof Statement && $entity = $val->getEntity()) {
+					$arguments = [
+						'hidden' => true,
+					];
+					/** @var array<"cast"|"default"|"separator", string> $args */
+					$args = $val->arguments;
+
+					if (is_array($entity) && $entity[0] === Environment::class) {
+						$type = (string)($entity[1] ?? 'string');
+
+						if ($type === 'array') {
+							$arguments['separator'] = $args['separator'];
+							$arguments['cast'] = $args['cast'];
+						} else {
+							$arguments['default'] = $args['default'];
+						}
+						$entity = '::' . $type;
+					}
+
+					$val = new Entity($entity, $arguments);
+				}
+			},
+		);
+		return "# generated by Nette\n\n" . Neon::encode($data, Neon::BLOCK);
+	}
 }

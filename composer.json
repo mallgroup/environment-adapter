@@ -37,6 +37,6 @@
         "nette/di": "^3.0",
         "nette/utils": "^3.0",
         "nette/neon": "^3.0",
-        "mallgroup/environment": "^1.0"
+        "mallgroup/environment": "^1.3"
     }
 }

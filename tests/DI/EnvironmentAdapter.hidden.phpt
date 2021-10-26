@@ -16,21 +16,19 @@ require __DIR__ . '/../bootstrap.php';
 
 define('TEMP_FILE', getTempDir() . '/cfg.env');
 
-Mallgroup\setenv('SERVICE_ARRAY', 'one|two');
-Mallgroup\setenv('SERVICE_ARRAY_INT', '1|2');
+Mallgroup\setenv('SERVICE_ARRAY', '1|2');
 
 $config = new Config\Loader();
 $config->addAdapter('env', EnvironmentAdapter::class);
 
 
 $cfg = '
-service_user: ::string(default: secret_user)
+service_user: ::string(secret_user)
 service_password: ::string(secret_password, true)
 service_port: ::int(1234)
 service_nonstring: ::nonstring(1234)
 service_active: ::bool(\'false\')
-service_array: ::array(|)
-service_array_int: ::array(cast: int)
+service_array: ::array(hidden: true, cast: int)
 ';
 $data = $config->load(Tester\FileMock::create($cfg, 'env'));
 Assert::equal([
@@ -49,8 +47,14 @@ Assert::equal([
 											  'service_port' => 1234,
 											  'service_nonstring' => '1234',
 											  'service_active' => false,
-											  'service_array' => ['one', 'two'],
-											  'service_array_int' => [1, 2],
+											  'service_array' => new Statement(
+													  'Mallgroup\Environment::array',
+													  [
+															  'name' => 'SERVICE_ARRAY',
+															  'cast' => 'int',
+															  'separator' => '|'
+													  ]
+											  ),
 									  ]
 					  ]
 			  ], $data);
@@ -66,13 +70,7 @@ Assert::match(
 	service_port: 1234
 	service_nonstring: "1234"
 	service_active: false
-	service_array:
-		- one
-		- two
-
-	service_array_int:
-		- 1
-		- 2
+	service_array: ::array(hidden: true, separator: |, cast: int)
 	EOD
 		,
 		file_get_contents(TEMP_FILE)
