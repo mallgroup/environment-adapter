@@ -10,12 +10,12 @@ use function debug_backtrace;
 
 class Configurator extends Bootstrap\Configurator
 {
-    protected function createLoader(): Loader
-    {
-        $loader = parent::createLoader();
-        $loader->addAdapter('env', EnvironmentAdapter::class);
-        return $loader;
-    }
+	protected function createLoader(): Loader
+	{
+		$loader = parent::createLoader();
+		$loader->addAdapter('env', EnvironmentAdapter::class);
+		return $loader;
+	}
 
 
 	/**
@@ -26,7 +26,7 @@ class Configurator extends Bootstrap\Configurator
 		$trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
 
 		$parameters = parent::getDefaultParameters();
-		$parameters['appDir'] = dirname((string)$trace[2]['file']);
+		$parameters['appDir'] = dirname($trace[2]['file']);
 
 		return $parameters;
 	}
