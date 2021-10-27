@@ -40,7 +40,6 @@ Assert::equal([
 													  'Mallgroup\Environment::string',
 													  [
 															  'name' => 'SERVICE_PASSWORD',
-															  'cast' => 'string',
 															  'default' => 'secret_password'
 													  ]
 											  ),

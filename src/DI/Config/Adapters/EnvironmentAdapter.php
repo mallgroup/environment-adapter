@@ -7,9 +7,12 @@ use Mallgroup\Environment;
 use Nette\DI\Config\Adapter;
 use Nette\DI\Definitions\Statement;
 use Nette\DI\InvalidConfigurationException;
+use Nette\InvalidArgumentException;
 use Nette\Neon\Entity;
 use Nette\Neon\Neon;
 use Nette\Utils\FileSystem;
+use ReflectionException;
+use ReflectionMethod;
 use function array_walk_recursive;
 use function gettype;
 use function strtoupper;
@@ -31,6 +34,7 @@ class EnvironmentAdapter implements Adapter
 	/**
 	 * @param array<string,mixed> $data
 	 * @return array<string, array<string, array<string, mixed>>>
+	 * @throws ReflectionException
 	 */
 	protected function process(array $data): array
 	{
@@ -49,7 +53,7 @@ class EnvironmentAdapter implements Adapter
 			$attributes = $this->getAttributes($entity->attributes);
 
 			if ($entity->attributes['hidden'] ?? $entity->attributes[1] ?? false) {
-				$envs[$var] = new Statement("Mallgroup\Environment::$type", $this->modifyStatementAttributes($name, $type, $attributes));
+				$envs[$var] = new Statement("Mallgroup\Environment::$type", $this->extractStatementAttributes($name, $type, $attributes));
 			} elseif ($type === 'array') {
 				$envs[$var] = Environment::array($name, $attributes['separator'] ?: '|', $attributes['cast']);
 			} else {
@@ -63,16 +67,26 @@ class EnvironmentAdapter implements Adapter
 	 * @param string $name
 	 * @param string $type
 	 * @param array<"cast"|"default"|"separator", string> $arguments
-	 * @return array<"cast"|"default"|"separator"|"name", string>
+	 * @return array<string, string>
+	 * @throws ReflectionException
 	 */
-	protected function modifyStatementAttributes(string $name, string $type, array $arguments): array {
+	protected function extractStatementAttributes(string $name, string $type, array $arguments): array {
+		$return = [];
 		$arguments['name'] = $name;
-		if ($type === 'array') {
-			unset($arguments['default']);
-		} else {
-			unset($arguments['separator']);
+
+		$reflection = new ReflectionMethod(Environment::class, $type);
+		foreach($reflection->getParameters() as $parameter) {
+			$name = $parameter->getName();
+			if (!isset($arguments[$name])) {
+				if (!$parameter->isOptional()) {
+					throw new InvalidArgumentException('Required argument ' . $name . ' not found.');
+				}
+				continue;
+			}
+			$return[$name] = $arguments[$name];
 		}
-		return $arguments;
+
+		return $return;
 	}
 
 	protected function getEntityType(Entity $entity): string
