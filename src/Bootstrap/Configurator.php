@@ -26,7 +26,7 @@ class Configurator extends Bootstrap\Configurator
 		$trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
 
 		$parameters = parent::getDefaultParameters();
-		$parameters['appDir'] = dirname($trace[2]['file']);
+		$parameters['appDir'] = dirname($trace[1]['file']);
 
 		return $parameters;
 	}
