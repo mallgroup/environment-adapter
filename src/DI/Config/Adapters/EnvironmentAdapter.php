@@ -23,6 +23,7 @@ class EnvironmentAdapter implements Adapter
 	/**
 	 * Reads configuration from PHP file.
 	 * @return array<string, array<string, array<string, mixed>>>
+	 * @throws ReflectionException
 	 */
 	public function load(string $file): array
 	{
@@ -66,7 +67,7 @@ class EnvironmentAdapter implements Adapter
 	/**
 	 * @param string $name
 	 * @param string $type
-	 * @param array<"cast"|"default"|"separator", string> $arguments
+	 * @param array{separator: string, cast: string, default: string} $arguments
 	 * @return array<string, string>
 	 * @throws ReflectionException
 	 */
@@ -100,7 +101,7 @@ class EnvironmentAdapter implements Adapter
 
 	/**
 	 * @param array<int|string, mixed> $arguments
-	 * @return array<"cast"|"default"|"separator", string>
+	 * @return array{separator: string, cast: string, default: string}
 	 */
 	protected function getAttributes(array $arguments): array
 	{
